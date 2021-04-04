@@ -19,7 +19,7 @@ async function enviarEmail(message: string, link: string) {
   const mailOptions = {
     from: process.env.AUTH_MAIL,
     to: process.env.EMAIL_TO,
-    subject: 'PS5 Disponivel (AMAZON)',
+    subject: process.env.SUBJECT,
     text: `${message}\n PS5 disponivel, run barry!!!!\n ${link}`
   }
 
@@ -32,19 +32,19 @@ async function enviarEmail(message: string, link: string) {
   })
 }
 
-async function time(disponivel: string) {
+async function time(textoDisponivel: string): Promise<string> {
   return new Promise((resolve) => {
     setTimeout(() => {
       const dataHora = moment().format('DD/MM/YYYY HH:mm:ss')
-      
-      console.log(`${dataHora} --> ${disponivel}`)
-      
-      resolve(disponivel)
+
+      console.log(`${dataHora} --> ${textoDisponivel}`)
+
+      resolve(textoDisponivel)
     }, 5_000);
   })
 }
 
-async function teste() {
+async function iniciarMonitoramento() {
   let disponivel: string = ''
 
   const link = process.env.LINK || ''
@@ -52,17 +52,17 @@ async function teste() {
   if (!link) throw new Error('not found link')
 
 
-  while (disponivel !== 'Em estoque.')  {
-    const result = await axios.get(link)
+  while (disponivel !== 'Em estoque.') {
+    const response = await axios.get(link)
 
-    const $ = cheerio.load(result.data)
+    const $ = cheerio.load(response.data)
 
-    const a = $('body').find('#availability').text().replace(/\r?\n|\r/g, '')
+    const textoDisponibilidade = $('body').find('#availability').text().replace(/\r?\n|\r/g, '')
 
-    disponivel = await time(a) as string
+    disponivel = await time(textoDisponibilidade)
   }
 
   await enviarEmail(disponivel, link)
 }
 
-teste()
+iniciarMonitoramento()
